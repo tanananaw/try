@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "571688070261",
-    "project_id": "bsit302todolistapp",
-    "storage_bucket": "bsit302todolistapp.firebasestorage.app"
+    "project_number": "221401543405",
+    "project_id": "ecommerce-app-66f0f",
+    "storage_bucket": "ecommerce-app-66f0f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:571688070261:android:4cf1e67384fbd78f52dc3c",
+        "mobilesdk_app_id": "1:221401543405:android:81870781128280826912e4",
         "android_client_info": {
           "package_name": "com.example.ecommerce_app"
         }
@@ -15,45 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBhX0wTjXXgh0hF531G3w9cM2ONaSQNtU0"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:571688070261:android:e0a9c5f04323512552dc3c",
-        "android_client_info": {
-          "package_name": "com.example.flutter_auth_app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBhX0wTjXXgh0hF531G3w9cM2ONaSQNtU0"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:571688070261:android:59b507f1f2c0363852dc3c",
-        "android_client_info": {
-          "package_name": "com.example.todo_firebase_app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBhX0wTjXXgh0hF531G3w9cM2ONaSQNtU0"
+          "current_key": "AIzaSyAEvkUy6h6hoyOpA98WrXbyQz-qxgklr_o"
         }
       ],
       "services": {

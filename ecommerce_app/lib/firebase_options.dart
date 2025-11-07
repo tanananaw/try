@@ -25,22 +25,22 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for ios - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-              'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -50,20 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBpN1IdPLtCndWicJHqW2fDcPUL5Js0bPM',
-    appId: '1:571688070261:web:3cf8aa0dc10db5f152dc3c',
-    messagingSenderId: '571688070261',
-    projectId: 'bsit302todolistapp',
-    authDomain: 'bsit302todolistapp.firebaseapp.com',
-    storageBucket: 'bsit302todolistapp.firebasestorage.app',
+    apiKey: 'AIzaSyBniZpwRQHmPSFyzwngDizi1ZAdq5kv6o8',
+    appId: '1:221401543405:web:26e046c34f47ebd76912e4',
+    messagingSenderId: '221401543405',
+    projectId: 'ecommerce-app-66f0f',
+    authDomain: 'ecommerce-app-66f0f.firebaseapp.com',
+    storageBucket: 'ecommerce-app-66f0f.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBhX0wTjXXgh0hF531G3w9cM2ONaSQNtU0',
-    appId: '1:571688070261:android:4cf1e67384fbd78f52dc3c',
-    messagingSenderId: '571688070261',
-    projectId: 'bsit302todolistapp',
-    storageBucket: 'bsit302todolistapp.firebasestorage.app',
+    apiKey: 'AIzaSyAEvkUy6h6hoyOpA98WrXbyQz-qxgklr_o',
+    appId: '1:221401543405:android:81870781128280826912e4',
+    messagingSenderId: '221401543405',
+    projectId: 'ecommerce-app-66f0f',
+    storageBucket: 'ecommerce-app-66f0f.firebasestorage.app',
   );
 
 }
