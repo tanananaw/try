@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -9,25 +10,77 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final User? _currentUser = FirebaseAuth.instance.currentUser;
+
+  final _formKey = GlobalKey<FormState>();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _currentUser!.updatePassword(_newPasswordController.text);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password changed successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _formKey.currentState!.reset();
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to change password: ${e.message}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      print("Error changing password: ${e.code}");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    await _auth.signOut();
+
+    // 🎬 Navigate to the logout animation screen
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (_) => const LogoutAnimationScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
+      appBar: AppBar(title: const Text('Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. User Info Section
-            Text(
-              'Logged in as:',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .titleMedium,
-            ),
+            Text('Logged in as:', style: Theme.of(context).textTheme.titleMedium),
             Text(
               _currentUser?.email ?? 'Not logged in',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -35,26 +88,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
-
-            // 2. Change Password Form
-            Text(
-              'Change Password',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .titleLarge,
-            ),
+            Text('Change Password', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             Form(
               key: _formKey,
               child: Column(
                 children: [
-                  // 3. New Password Field
                   TextFormField(
                     controller: _newPasswordController,
                     obscureText: true,
-                    decoration:
-                    const InputDecoration(labelText: 'New Password'),
+                    decoration: const InputDecoration(labelText: 'New Password'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a password';
@@ -66,17 +109,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  // 4. Confirm Password Field
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: true,
-                    decoration:
-                    const InputDecoration(labelText: 'Confirm Password'),
+                    decoration: const InputDecoration(labelText: 'Confirm Password'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please confirm your password';
                       }
-                      // 5. Check if it matches the other field
                       if (value != _newPasswordController.text) {
                         return 'Passwords do not match';
                       }
@@ -87,8 +127,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // 6. "Change Password" Button
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -100,15 +138,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               )
                   : const Text('Change Password'),
             ),
-
             const SizedBox(height: 40),
             const Divider(),
             const SizedBox(height: 20),
-
-            // 7. The "Logout" Button
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[700], // Make it red
+                backgroundColor: Colors.grey[700],
               ),
               onPressed: _signOut,
               child: const Text('Log Out'),
@@ -118,87 +153,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
 
+class LogoutAnimationScreen extends StatefulWidget {
+  const LogoutAnimationScreen({super.key});
 
-// 1. Get Firebase instances
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
+  @override
+  State<LogoutAnimationScreen> createState() => _LogoutAnimationScreenState();
+}
 
-  // 2. Form key and controllers for changing password
-  final _formKey = GlobalKey<FormState>();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+class _LogoutAnimationScreenState extends State<LogoutAnimationScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
 
-  // 3. State variable for loading
-  bool _isLoading = false;
+  @override
+  void initState() {
+    super.initState();
 
-  // 4. Clean up controllers
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
+    _controller.forward();
+
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _changePassword() async {
-    // 2. Validate the form
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // 3. This is the Firebase command to update the password
-      await _currentUser!.updatePassword(_newPasswordController.text);
-
-      // 4. Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password changed successfully!'),
-          backgroundColor: Colors.green,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.shopping_bag_rounded,
+                  size: 100,
+                  color: Colors.tealAccent,
+                ),
+                SizedBox(height: 20),
+                Text(
+                  "Thank you for shopping in my store!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "I hope you like it!!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      );
-      // Clear the fields
-      _formKey.currentState!.reset();
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
-    } on FirebaseAuthException catch (e) {
-      // 5. Handle errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to change password: ${e.message}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      print("Error changing password: ${e.code}");
-      // e.code 'requires-recent-login' is a common error
-      // This means the user's token is old.
-      // You can prompt them to log out and log back in.
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // 6. This is the "Logout" logic
-  Future<void> _signOut() async {
-    // 2. Get the Navigator *before* the async call
-    //    (This avoids a "don't use BuildContext" warning)
-    final navigator = Navigator.of(context);
-
-    // 3. This is your existing code
-    await _auth.signOut();
-
-    // 4. --- THIS IS THE FIX ---
-    //    After signing out, pop all screens until we are
-    //    back at the very first screen (which is our AuthWrapper).
-    //    The AuthWrapper will then correctly show the LoginScreen.
-    navigator.popUntil((route) => route.isFirst);
+      ),
+    );
   }
 }

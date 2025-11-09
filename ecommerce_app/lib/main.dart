@@ -21,15 +21,24 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // 4. --- THIS IS THE FIX ---
+  // We manually create the CartProvider instance *before* runApp
+  final cartProvider = CartProvider();
 
-  FlutterNativeSplash.remove();
+  // 5. We call our new initialize method *before* runApp
+  cartProvider.initializeAuthListener();
 
+  // 7. This is the NEW code for runApp
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => CartProvider(),
+    // 8. We use ChangeNotifierProvider.value
+    ChangeNotifierProvider.value(
+      value: cartProvider, // 9. We provide the instance we already created
       child: const MyApp(),
     ),
   );
+
+  // 10. Remove splash screen (Unchanged)
+  FlutterNativeSplash.remove();
 }
 
 class MyApp extends StatelessWidget {
@@ -89,7 +98,7 @@ class MyApp extends StatelessWidget {
           // 7. --- (FIX) GLOBAL CARD STYLE ---
           cardTheme: CardThemeData(
             elevation: 1, // A softer shadow
-            color: Colors.white, // Pure white cards on the off-white bg
+            color: Colors.white24, // Pure white cards on the off-white bg
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

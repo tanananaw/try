@@ -1,12 +1,123 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerce_app/widgets/chat_bubble.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class ChatScreen extends StatefulWidget {
-  // 1. This is the "chat room ID". It's just the user's ID.
+/// 🎬 CONTACT ADMIN ANIMATION SCREEN
+class ContactAdminAnimationScreen extends StatefulWidget {
   final String chatRoomId;
-  // 2. This is for the AppBar title (e.g., "Chat with user@example.com")
+  final String? userName;
+
+  const ContactAdminAnimationScreen({
+    super.key,
+    required this.chatRoomId,
+    this.userName,
+  });
+
+  @override
+  State<ContactAdminAnimationScreen> createState() =>
+      _ContactAdminAnimationScreenState();
+}
+
+class _ContactAdminAnimationScreenState
+    extends State<ContactAdminAnimationScreen> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _fadeController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+
+    _scaleController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _scaleAnimation = CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    );
+
+    // Play both animations sequentially
+    _fadeController.forward();
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _scaleController.forward();
+    });
+
+    // Automatically navigate to chat after 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              chatRoomId: widget.chatRoomId,
+              userName: widget.userName,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Center(
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.support_agent_rounded,
+                  size: 100,
+                  color: Colors.blueAccent,
+                ),
+                SizedBox(height: 20),
+                Text(
+                  "You can contact admin now 💬",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "We’re here to help you anytime!",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 💬 MAIN CHAT SCREEN
+class ChatScreen extends StatefulWidget {
+  final String chatRoomId;
   final String? userName;
 
   const ChatScreen({
@@ -20,16 +131,12 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // 3. Get Firebase instances
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 4. Controllers
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-// The logic and UI will go here next...
-  // 1. This function runs ONCE when the screen is loaded
   @override
   void initState() {
     super.initState();
@@ -40,20 +147,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final User? currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // 2. We need to know which counter to reset
-    // 3. If I am the USER opening this chat:
+    // Reset unread count depending on who opened the chat
     if (currentUser.uid == widget.chatRoomId) {
       await _firestore.collection('chats').doc(widget.chatRoomId).set({
-        'unreadByUserCount': 0, // Reset the user's count
-      }, SetOptions(merge: true)); // 'merge: true' creates the doc if it doesn't exist
-    }
-    // 4. If I am the ADMIN opening this chat:
-    else {
+        'unreadByUserCount': 0,
+      }, SetOptions(merge: true));
+    } else {
       await _firestore.collection('chats').doc(widget.chatRoomId).set({
-        'unreadByAdminCount': 0, // Reset the admin's count
+        'unreadByAdminCount': 0,
       }, SetOptions(merge: true));
     }
   }
+
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
@@ -66,50 +171,42 @@ class _ChatScreenState extends State<ChatScreen> {
     final timestamp = FieldValue.serverTimestamp();
 
     try {
-      // --- TASK 1: Save the message ---
-      // (This is standard: save to the 'messages' subcollection)
+      // Save message
       await _firestore
           .collection('chats')
-          .doc(widget.chatRoomId)   // This is the USER's ID
-          .collection('messages') // The subcollection
-          .add({                    // Add a new message document
+          .doc(widget.chatRoomId)
+          .collection('messages')
+          .add({
         'text': messageText,
         'createdAt': timestamp,
         'senderId': currentUser.uid,
         'senderEmail': currentUser.email,
       });
 
-      // --- TASK 2: Update the Parent Doc & Unread Counts ---
+      // Update chat metadata
       Map<String, dynamic> parentDocData = {
         'lastMessage': messageText,
         'lastMessageAt': timestamp,
       };
 
-      // 1. If I am the USER sending:
       if (currentUser.uid == widget.chatRoomId) {
         parentDocData['userEmail'] = currentUser.email;
-        // Increment the ADMIN's unread count
         parentDocData['unreadByAdminCount'] = FieldValue.increment(1);
-      }
-      // 2. If I am the ADMIN sending:
-      else {
-        // Increment the USER's unread count
+      } else {
         parentDocData['unreadByUserCount'] = FieldValue.increment(1);
       }
 
-      // 3. Use .set(merge: true) to create/update the parent doc
       await _firestore
           .collection('chats')
           .doc(widget.chatRoomId)
           .set(parentDocData, SetOptions(merge: true));
 
-      // --- TASK 3: Scroll to bottom ---
+      // Scroll to bottom
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        _scrollController.position.maxScrollExtent + 100,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-
     } catch (e) {
       print("Error sending message: $e");
     }
@@ -121,28 +218,29 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // Show "Chat with [User Email]" for admin, or "Contact Admin" for user
         title: Text(widget.userName ?? 'Contact Admin'),
       ),
       body: Column(
         children: [
-          // --- The Message List ---
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              // Query the 'messages' subcollection
               stream: _firestore
                   .collection('chats')
                   .doc(widget.chatRoomId)
                   .collection('messages')
-                  .orderBy('createdAt', descending: false) // Oldest first
+                  .orderBy('createdAt', descending: false)
                   .snapshots(),
-
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}\n\n(Have you created the Firestore Index?)'));
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}\n\n(Have you created the Firestore Index?)',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('Say hello!'));
@@ -154,19 +252,18 @@ class _ChatScreenState extends State<ChatScreen> {
                   controller: _scrollController,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final messageData = messages[index].data() as Map<String, dynamic>;
+                    final messageData =
+                    messages[index].data() as Map<String, dynamic>;
                     return ChatBubble(
                       message: messageData['text'] ?? '',
-                      // Check if sender is the current user
-                      isCurrentUser: messageData['senderId'] == currentUser!.uid,
+                      isCurrentUser:
+                      messageData['senderId'] == currentUser!.uid,
                     );
                   },
                 );
               },
             ),
           ),
-
-          // --- The Text Input Field ---
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -193,6 +290,3 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
-
-
-

@@ -12,8 +12,6 @@ import 'package:ecommerce_app/screens/profile_screen.dart';
 import 'package:ecommerce_app/widgets/notifications_icon.dart';
 import 'package:ecommerce_app/screens/chat_screen.dart';
 
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -54,13 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset(
-      'assets/image/splash_logo.png',
-        width: 10,
-        height: 40, // 4. Set a fixed height
-      ),
-
-      actions: [
-          // 🛒 Cart Button with Badge (Unchanged)
+          'assets/images/tjsupplement.png',
+          width: 40,
+          height: 40,
+        ),
+        actions: [
+          // 🛒 Cart Button with Badge
           Consumer<CartProvider>(
             builder: (context, cart, child) {
               return Badge(
@@ -80,11 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
-
           const NotificationIcon(),
-          // --- END OF NEW WIDGET ---
 
-          //  My Orders Icon
+          // My Orders Icon
           IconButton(
             icon: const Icon(Icons.receipt_long),
             tooltip: 'My Orders',
@@ -97,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
-          //  Admin Panel (only if admin)
+          // Admin Panel (only if admin)
           if (_userRole == 'admin')
             IconButton(
               icon: const Icon(Icons.admin_panel_settings),
@@ -111,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
-          //  Profile Button
+          // Profile Button
           IconButton(
             icon: const Icon(Icons.person),
             tooltip: 'Profile',
@@ -126,107 +121,123 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      //  Product Grid
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('products')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      // Body with Title Bar and Product Grid
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title Bar
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Colors.grey,
+            child:
+                const Text(
+                  "TJ's Supplements Store",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+          // Expanded Product Grid
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('products')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
-              child: Text('No products found. Add some in the admin panel!'),
-            );
-          }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-          final products = snapshot.data!.docs;
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(10.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 3 / 4,
-            ),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final productDoc = products[index];
-              final productData = productDoc.data() as Map<String, dynamic>;
-
-              return ProductCard(
-                productName: productData['name'],
-                price: productData['price'],
-                imageUrl: productData['imageUrl'],
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailScreen(
-                        productData: productData,
-                        productID: productDoc.id,
-                      ),
-                    ),
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                        'No products found. Add some in the admin panel!'),
                   );
-                },
-              );
-            },
-          );
-        },
+                }
+
+                final products = snapshot.data!.docs;
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(10.0),
+                  gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 3 / 4,
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final productDoc = products[index];
+                    final productData =
+                    productDoc.data() as Map<String, dynamic>;
+
+                    return ProductCard(
+                      productName: productData['name'],
+                      price: productData['price'],
+                      imageUrl: productData['imageUrl'],
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailScreen(
+                              productData: productData,
+                              productID: productDoc.id,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
 
+      // Floating Action Button (Contact Admin)
       floatingActionButton: _userRole == 'user'
-          ? StreamBuilder<DocumentSnapshot>( // 2. A new StreamBuilder
-        // 3. Listen to *this user's* chat document
-        stream: _firestore.collection('chats').doc(_currentUser!.uid).snapshots(),
+          ? StreamBuilder<DocumentSnapshot>(
+        stream:
+        _firestore.collection('chats').doc(_currentUser!.uid).snapshots(),
         builder: (context, snapshot) {
-
           int unreadCount = 0;
-          // 4. Check if the doc exists and has our count field
           if (snapshot.hasData && snapshot.data!.exists) {
-            // Ensure data is not null before casting
             final data = snapshot.data!.data();
             if (data != null) {
-              unreadCount = (data as Map<String, dynamic>)['unreadByUserCount'] ?? 0;
+              unreadCount =
+                  (data as Map<String, dynamic>)['unreadByUserCount'] ?? 0;
             }
           }
 
-          // 5. --- THE FIX for "trailing not defined" ---
-          //    We wrap the FAB in the Badge widget
           return Badge(
-            // 6. Show the count in the badge
             label: Text('$unreadCount'),
-            // 7. Only show the badge if the count is > 0
             isLabelVisible: unreadCount > 0,
-            // 8. The FAB is now the *child* of the Badge
             child: FloatingActionButton.extended(
               icon: const Icon(Icons.support_agent),
               label: const Text('Contact Admin'),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      chatRoomId: _currentUser!.uid,
-                    ),
+                    builder: (context) =>
+                        ChatScreen(chatRoomId: _currentUser!.uid),
                   ),
                 );
               },
             ),
           );
-          // --- END OF FIX ---
         },
       )
-          : null, // 9. If admin, don't show the FAB
+          : null,
     );
   }
 }
-
-
-
